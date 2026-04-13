@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
 import MushroomLogo from "./assets/mushroom_logo.png";
@@ -5,10 +6,133 @@ import { Routes, Route, Link } from "react-router-dom";
 import Edible from "./pages/edible";
 import Poisonous from "./pages/poisonous";
 import ScrollToTop from "./components/scrolltotop";
+import { classifyBoth, getFeatureImportance, getFeatures, getStats } from "./api";
+
+const FEATURE_PICK_ORDER = [
+  "odor",
+  "cap-shape",
+  "cap-surface",
+  "cap-color",
+  "bruises",
+  "gill-size",
+];
+
+function StatCard({ label, value }) {
+  return (
+    <div className="rounded-3xl border border-stone-200 bg-white px-5 py-6 shadow-sm">
+      <p className="text-sm uppercase tracking-[0.2em] text-stone-500">{label}</p>
+      <p className="mt-3 font-patua text-3xl text-stone-900">{value}</p>
+    </div>
+  );
+}
+
+function FeatureSelect({ featureName, options, value, onChange }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold capitalize text-stone-700">
+        {featureName.replaceAll("-", " ")}
+      </span>
+      <select
+        value={value}
+        onChange={(event) => onChange(featureName, event.target.value)}
+        className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:border-red-500"
+      >
+        <option value="">Select an option</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 function Home() {
+  const [stats, setStats] = useState(null);
+  const [features, setFeatures] = useState({});
+  const [featureImportance, setFeatureImportance] = useState(null);
+  const [selectedFeatures, setSelectedFeatures] = useState({});
+  const [classification, setClassification] = useState(null);
+  const [loadingHome, setLoadingHome] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHomepageData() {
+      setLoadingHome(true);
+      setError("");
+
+      try {
+        const [statsResponse, featuresResponse, featureImportanceResponse] = await Promise.all([
+          getStats(),
+          getFeatures(),
+          getFeatureImportance(5),
+        ]);
+
+        if (!cancelled) {
+          setStats(statsResponse);
+          setFeatures(featuresResponse.features);
+          setFeatureImportance(featureImportanceResponse);
+
+          const defaults = {};
+          FEATURE_PICK_ORDER.forEach((featureName) => {
+            const firstOption = featuresResponse.features[featureName]?.[0];
+            if (firstOption) {
+              defaults[featureName] = firstOption.value;
+            }
+          });
+          setSelectedFeatures(defaults);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingHome(false);
+        }
+      }
+    }
+
+    loadHomepageData();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function handleFeatureChange(featureName, value) {
+    setSelectedFeatures((current) => ({
+      ...current,
+      [featureName]: value,
+    }));
+  }
+
+  async function handleClassify(event) {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const activeFeatures = Object.fromEntries(
+        Object.entries(selectedFeatures).filter(([, value]) => value)
+      );
+      const result = await classifyBoth(activeFeatures);
+      setClassification(result);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const topRandomForestFeature = featureImportance?.random_forest?.[0];
+  const topDecisionTreeFeature = featureImportance?.decision_tree?.[0];
+
   return (
-    <div className="bg-white text-gray-900">
+    <div className="bg-[linear-gradient(180deg,#fffdf7_0%,#fff7ef_38%,#ffffff_100%)] text-gray-900">
 
       <section className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
         <div className="flex justify-center mb-6">
@@ -25,8 +149,8 @@ function Home() {
         </h1>
 
         <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-8">
-          The Mushroom Classifier application predicts whether mushrooms are edible or poisonous using advanced Data Mining techniques such as Random Forest and Decision Trees. 
-          Our dataset comes from UC Irvine’s Machine Learning Repository, containing physical features like cap-shape, cap-surface, odor, and more.
+          The Mushroom Classifier application predicts whether mushrooms are edible or poisonous using advanced Data Mining techniques such as Random Forest and Decision Trees.
+          The backend mines the mushroom dataset stored inside the project and exposes the results for the frontend to display.
         </p>
 
         <div className="flex justify-center gap-4">
@@ -43,6 +167,125 @@ function Home() {
           >
             Explore Poisonous Mushrooms
           </Link>
+        </div>
+      </section>
+
+      <section className="max-w-5xl mx-auto px-6 pb-12">
+        {error && (
+          <div className="mb-6 rounded-3xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-5">
+          <StatCard
+            label="Dataset Rows"
+            value={loadingHome ? "..." : stats?.total_mushrooms ?? 0}
+          />
+          <StatCard
+            label="Edible"
+            value={loadingHome ? "..." : stats?.edible ?? 0}
+          />
+          <StatCard
+            label="Poisonous"
+            value={loadingHome ? "..." : stats?.poisonous ?? 0}
+          />
+          <StatCard
+            label="RF Accuracy"
+            value={loadingHome ? "..." : `${Math.round((stats?.rf_accuracy ?? 0) * 100)}%`}
+          />
+          <StatCard
+            label="DT Accuracy"
+            value={loadingHome ? "..." : `${Math.round((stats?.dt_accuracy ?? 0) * 100)}%`}
+          />
+        </div>
+      </section>
+
+      <section className="bg-stone-950 py-16 text-stone-100">
+        <div className="max-w-5xl mx-auto px-6 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[2rem] bg-white/8 p-8 backdrop-blur">
+            <p className="mb-3 text-sm uppercase tracking-[0.24em] text-red-200">
+              Live Classifier
+            </p>
+            <h2 className="font-patua text-3xl leading-tight">
+              Test the backend prediction output with real mined mushroom features.
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-stone-300">
+              Choose a few feature values from the dataset and the frontend will call both trained models so you can compare edible versus poisonous predictions.
+            </p>
+
+            <form onSubmit={handleClassify} className="mt-8 grid gap-4 md:grid-cols-2">
+              {FEATURE_PICK_ORDER.map((featureName) => (
+                <FeatureSelect
+                  key={featureName}
+                  featureName={featureName}
+                  options={features[featureName] || []}
+                  value={selectedFeatures[featureName] || ""}
+                  onChange={handleFeatureChange}
+                />
+              ))}
+
+              <div className="md:col-span-2 flex flex-wrap items-center gap-4 pt-2">
+                <button
+                  type="submit"
+                  disabled={loadingHome || submitting}
+                  className="rounded-full bg-red-500 px-7 py-3 text-sm font-semibold text-white transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? "Classifying..." : "Run Classification"}
+                </button>
+                <span className="text-sm text-stone-300">
+                  Uses Random Forest and Decision Tree outputs from the Flask API.
+                </span>
+              </div>
+            </form>
+          </div>
+
+          <div className="rounded-[2rem] bg-[#fff7ef] p-8 text-stone-900 shadow-xl">
+            <p className="mb-3 text-sm uppercase tracking-[0.24em] text-stone-500">
+              Prediction Output
+            </p>
+            {classification ? (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-patua text-2xl">
+                    Models agree: {classification.models_agree ? "Yes" : "No"}
+                  </h3>
+                  <p className="mt-2 text-sm text-stone-600">
+                    Random Forest predicted{" "}
+                    <span className="font-semibold">{classification.random_forest.classification}</span>
+                    {" "}and Decision Tree predicted{" "}
+                    <span className="font-semibold">{classification.decision_tree.classification}</span>.
+                  </p>
+                </div>
+
+                <div className="grid gap-4">
+                  <div className="rounded-3xl bg-white p-5">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Random Forest</p>
+                    <p className="mt-2 font-patua text-2xl capitalize">
+                      {classification.random_forest.classification}
+                    </p>
+                    <p className="mt-2 text-sm text-stone-600">
+                      Poisonous confidence: {Math.round(classification.random_forest.confidence.poisonous * 100)}%
+                    </p>
+                  </div>
+
+                  <div className="rounded-3xl bg-white p-5">
+                    <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Decision Tree</p>
+                    <p className="mt-2 font-patua text-2xl capitalize">
+                      {classification.decision_tree.classification}
+                    </p>
+                    <p className="mt-2 text-sm text-stone-600">
+                      Poisonous confidence: {Math.round(classification.decision_tree.confidence.poisonous * 100)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-3xl border border-dashed border-stone-300 bg-white/70 px-5 py-10 text-center text-sm text-stone-500">
+                Submit feature values to see the backend prediction output here.
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -76,6 +319,51 @@ function Home() {
             </p>
           </div>
 
+        </div>
+      </section>
+
+      <section className="max-w-5xl mx-auto px-6 py-16">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-sm">
+            <p className="text-sm uppercase tracking-[0.24em] text-stone-500">
+              Feature Signals
+            </p>
+            <h2 className="mt-3 font-patua text-3xl text-stone-900">
+              Top attributes learned from the mushroom dataset.
+            </h2>
+            <div className="mt-6 space-y-4 text-sm text-stone-600">
+              <p>
+                Random Forest top feature:{" "}
+                <span className="font-semibold text-stone-900">
+                  {topRandomForestFeature?.feature || "Loading..."}
+                </span>
+              </p>
+              <p>
+                Decision Tree top feature:{" "}
+                <span className="font-semibold text-stone-900">
+                  {topDecisionTreeFeature?.feature || "Loading..."}
+                </span>
+              </p>
+              <p>
+                Total features mined by the backend:{" "}
+                <span className="font-semibold text-stone-900">
+                  {loadingHome ? "..." : stats?.total_features ?? 0}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-stone-200 bg-[#f8f3ea] p-8 shadow-sm">
+            <p className="text-sm uppercase tracking-[0.24em] text-stone-500">
+              Full Stack Flow
+            </p>
+            <h2 className="mt-3 font-patua text-3xl text-stone-900">
+              Backend mining, frontend presentation.
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-stone-700">
+              The Flask backend reads the local mushroom dataset, trains the models, exposes edible and poisonous entries through the API, and the React frontend renders those results on the dedicated pages.
+            </p>
+          </div>
         </div>
       </section>
 

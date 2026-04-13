@@ -1,60 +1,52 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getEdible } from "../api";
 
-const edibleMushrooms = [
-  // { id, name, scientificName, habitat, season, description, imageUrl }
-];
+const PER_PAGE = 12;
+
+function formatMushroomTitle(mushroom) {
+  return `${mushroom["cap-color"]} ${mushroom["cap-shape"]} ${mushroom["cap-surface"]} Mushroom`;
+}
+
+function getDescription(mushroom) {
+  return `Odor: ${mushroom.odor}. Gill color: ${mushroom["gill-color"]}. Spore print: ${mushroom["spore-print-color"]}. Ring type: ${mushroom["ring-type"]}. Habitat: ${mushroom.habitat}.`;
+}
 
 function MushroomCard({ mushroom }) {
+  const name = formatMushroomTitle(mushroom);
+
   return (
     <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden flex flex-col">
       <div className="h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
-        {mushroom.imageUrl ? (
-          <img
-            src={mushroom.imageUrl}
-            alt={mushroom.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <span className="text-5xl">🍄</span>
-        )}
+        <span className="text-5xl">🍄</span>
       </div>
       <div className="p-5 flex flex-col flex-1">
         <div className="flex items-start justify-between mb-1">
           <h3 className="font-patua text-lg font-semibold text-gray-900 leading-tight">
-            {mushroom.name}
+            {name}
           </h3>
           <span className="ml-2 mt-0.5 shrink-0 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700 font-medium">
             Edible
           </span>
         </div>
-        {mushroom.scientificName && (
-          <p className="text-xs text-gray-400 italic mb-3">
-            {mushroom.scientificName}
-          </p>
-        )}
-        {mushroom.description && (
-          <p className="text-sm text-gray-600 flex-1 mb-4">
-            {mushroom.description}
-          </p>
-        )}
-        <div className="flex gap-3 mt-auto text-xs text-gray-500">
-          {mushroom.habitat && (
-            <span className="flex items-center gap-1">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {mushroom.habitat}
-            </span>
-          )}
-          {mushroom.season && (
-            <span className="flex items-center gap-1">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {mushroom.season}
-            </span>
-          )}
+        <p className="text-xs text-gray-400 italic mb-3">
+          Representative dataset ID #{mushroom.example_id}
+        </p>
+        <div className="mb-3">
+          <span className="inline-block px-2 py-0.5 text-xs rounded-md bg-green-50 text-green-700 font-medium border border-green-100 mr-2">
+            {mushroom.occurrence_count} matching rows
+          </span>
+          <span className="inline-block px-2 py-0.5 text-xs rounded-md bg-stone-100 text-stone-700 font-medium border border-stone-200">
+            {mushroom.bruises}
+          </span>
+        </div>
+        <p className="text-sm text-gray-600 flex-1 mb-4">
+          {getDescription(mushroom)}
+        </p>
+        <div className="flex flex-wrap gap-3 mt-auto text-xs text-gray-500">
+          <span>{mushroom.habitat}</span>
+          <span>{mushroom["spore-print-color"]} spores</span>
+          <span>{mushroom.population}</span>
         </div>
       </div>
     </div>
@@ -76,6 +68,40 @@ function EmptyState() {
 }
 
 export default function EdibleMushrooms() {
+  const [page, setPage] = useState(1);
+  const [payload, setPayload] = useState({ data: [], total: 0, total_pages: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEdible() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const result = await getEdible(page, PER_PAGE, true);
+        if (!cancelled) {
+          setPayload(result);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadEdible();
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
+
   return (
     <div className="bg-white text-gray-900 min-h-screen flex flex-col">
 
@@ -95,12 +121,12 @@ export default function EdibleMushrooms() {
         <div className="max-w-5xl mx-auto px-6 py-4 flex flex-wrap gap-6 items-center justify-center md:justify-start text-sm text-gray-600">
           <span>
             <span className="font-semibold text-gray-900 font-patua">
-              {edibleMushrooms.length}
+              {payload.total}
             </span>{" "}
-            species listed
+            unique edible profiles
           </span>
           <span className="hidden md:inline text-gray-300">|</span>
-          <span>Classified using Data Mining</span>
+          <span>{payload.raw_total ?? 0} edible rows mined from the backend dataset</span>
           <span className="hidden md:inline text-gray-300">|</span>
           <Link to="/poisonous" className="text-red-500 hover:underline font-medium">
             View Poisonous →
@@ -109,13 +135,47 @@ export default function EdibleMushrooms() {
       </div>
 
       <main className="flex-1 max-w-5xl mx-auto px-6 py-12 w-full">
+        {error && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {edibleMushrooms.length > 0
-            ? edibleMushrooms.map((m) => (
+          {loading ? (
+            <div className="col-span-full py-20 text-center text-gray-500">
+              Loading edible mushrooms...
+            </div>
+          ) : payload.data.length > 0
+            ? payload.data.map((m) => (
                 <MushroomCard key={m.id} mushroom={m} />
               ))
             : <EmptyState />}
         </div>
+
+        {payload.total_pages > 1 && (
+          <div className="mt-10 flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={page === 1 || loading}
+              className="rounded-full border border-gray-300 px-5 py-2 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600">
+              Page {page} of {payload.total_pages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((current) => Math.min(payload.total_pages, current + 1))}
+              disabled={page === payload.total_pages || loading}
+              className="rounded-full bg-red-500 px-5 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </main>
 
       <section className="bg-gray-50 border-t border-gray-100 py-14 text-center">

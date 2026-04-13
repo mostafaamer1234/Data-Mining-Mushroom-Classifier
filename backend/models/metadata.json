@@ -1,0 +1,252 @@
+{
+  "feature_names": [
+    "cap-shape",
+    "cap-surface",
+    "cap-color",
+    "bruises",
+    "odor",
+    "gill-attachment",
+    "gill-spacing",
+    "gill-size",
+    "gill-color",
+    "stalk-shape",
+    "stalk-root",
+    "stalk-surface-above-ring",
+    "stalk-surface-below-ring",
+    "stalk-color-above-ring",
+    "stalk-color-below-ring",
+    "veil-type",
+    "veil-color",
+    "ring-number",
+    "ring-type",
+    "spore-print-color",
+    "population",
+    "habitat"
+  ],
+  "target_classes": [
+    "e",
+    "p"
+  ],
+  "total_samples": 8124,
+  "edible_count": 4208,
+  "poisonous_count": 3916,
+  "dataset_source": "/Users/wilito2401/Documents/Mushroom Classifier/backend/mushroom/agaricus-lepiota.data",
+  "models": {
+    "random_forest": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "cross_val_mean": 0.885364,
+      "cross_val_std": 0.1624,
+      "confusion_matrix": [
+        [
+          842,
+          0
+        ],
+        [
+          0,
+          783
+        ]
+      ],
+      "feature_importance": [
+        {
+          "feature": "odor",
+          "importance": 0.193744
+        },
+        {
+          "feature": "gill-color",
+          "importance": 0.114487
+        },
+        {
+          "feature": "spore-print-color",
+          "importance": 0.106751
+        },
+        {
+          "feature": "gill-size",
+          "importance": 0.098617
+        },
+        {
+          "feature": "ring-type",
+          "importance": 0.070559
+        },
+        {
+          "feature": "stalk-root",
+          "importance": 0.067075
+        },
+        {
+          "feature": "population",
+          "importance": 0.056547
+        },
+        {
+          "feature": "stalk-surface-above-ring",
+          "importance": 0.052588
+        },
+        {
+          "feature": "bruises",
+          "importance": 0.046456
+        },
+        {
+          "feature": "stalk-surface-below-ring",
+          "importance": 0.028409
+        },
+        {
+          "feature": "habitat",
+          "importance": 0.027418
+        },
+        {
+          "feature": "gill-spacing",
+          "importance": 0.025004
+        },
+        {
+          "feature": "stalk-color-above-ring",
+          "importance": 0.024496
+        },
+        {
+          "feature": "ring-number",
+          "importance": 0.019239
+        },
+        {
+          "feature": "stalk-color-below-ring",
+          "importance": 0.017353
+        },
+        {
+          "feature": "cap-color",
+          "importance": 0.016126
+        },
+        {
+          "feature": "stalk-shape",
+          "importance": 0.015122
+        },
+        {
+          "feature": "cap-surface",
+          "importance": 0.009579
+        },
+        {
+          "feature": "cap-shape",
+          "importance": 0.003882
+        },
+        {
+          "feature": "gill-attachment",
+          "importance": 0.003327
+        },
+        {
+          "feature": "veil-color",
+          "importance": 0.003219
+        },
+        {
+          "feature": "veil-type",
+          "importance": 0.0
+        }
+      ]
+    },
+    "decision_tree": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "cross_val_mean": 0.961591,
+      "cross_val_std": 0.04908,
+      "confusion_matrix": [
+        [
+          842,
+          0
+        ],
+        [
+          0,
+          783
+        ]
+      ],
+      "feature_importance": [
+        {
+          "feature": "gill-color",
+          "importance": 0.338633
+        },
+        {
+          "feature": "spore-print-color",
+          "importance": 0.21618
+        },
+        {
+          "feature": "population",
+          "importance": 0.177561
+        },
+        {
+          "feature": "gill-size",
+          "importance": 0.109882
+        },
+        {
+          "feature": "odor",
+          "importance": 0.035568
+        },
+        {
+          "feature": "habitat",
+          "importance": 0.031613
+        },
+        {
+          "feature": "bruises",
+          "importance": 0.029587
+        },
+        {
+          "feature": "stalk-shape",
+          "importance": 0.023563
+        },
+        {
+          "feature": "stalk-color-below-ring",
+          "importance": 0.015961
+        },
+        {
+          "feature": "stalk-root",
+          "importance": 0.01151
+        },
+        {
+          "feature": "cap-color",
+          "importance": 0.00384
+        },
+        {
+          "feature": "stalk-surface-above-ring",
+          "importance": 0.002933
+        },
+        {
+          "feature": "stalk-surface-below-ring",
+          "importance": 0.001641
+        },
+        {
+          "feature": "ring-number",
+          "importance": 0.001528
+        },
+        {
+          "feature": "cap-shape",
+          "importance": 0.0
+        },
+        {
+          "feature": "cap-surface",
+          "importance": 0.0
+        },
+        {
+          "feature": "gill-attachment",
+          "importance": 0.0
+        },
+        {
+          "feature": "gill-spacing",
+          "importance": 0.0
+        },
+        {
+          "feature": "stalk-color-above-ring",
+          "importance": 0.0
+        },
+        {
+          "feature": "veil-type",
+          "importance": 0.0
+        },
+        {
+          "feature": "veil-color",
+          "importance": 0.0
+        },
+        {
+          "feature": "ring-type",
+          "importance": 0.0
+        }
+      ]
+    }
+  }
+}
