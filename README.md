@@ -39,7 +39,7 @@ The goal of the Mushroom Classifier is to develop a **reliable and user-friendly
 | Name | Contribution |
 |------|--------------|
 | **Wilson Quilli** | Frontend with React and wrote the final report |
-| **Mostafa Amer** | Backend with Python |
+| **Mostafa Amer** | Built & trained Computer vision model and machine learning models. Backend with Python |
 | **Mohamed Abdalla** | Integrated backend and frontend; created the final presentation |
 
 ## Technologies Used
